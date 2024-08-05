@@ -15830,6 +15830,7 @@ var MicRecorder = function () {
     this.microphone = null;
     this.processor = null;
     this.startTime = 0;
+    this.paused = false;
 
     Object.assign(this.config, config);
   }
@@ -15860,7 +15861,7 @@ var MicRecorder = function () {
 
       // Add all buffers from LAME into an array.
       this.processor.onaudioprocess = function (event) {
-        if (_this.timerToStart) {
+        if (_this.timerToStart || _this.paused) {
           return;
         }
 
@@ -15892,6 +15893,7 @@ var MicRecorder = function () {
         }
 
         this.processor.onaudioprocess = null;
+        this.paused = false;
 
         // Stop all audio tracks. Also, removes recording icon from chrome tab
         this.activeStream.getAudioTracks().forEach(function (track) {
@@ -15902,13 +15904,55 @@ var MicRecorder = function () {
       return this;
     }
   }, {
-    key: 'start',
+    key: 'pause',
 
+
+    /**
+     * Pause microphone, processor
+     */
+    value: function pause() {
+      if (this.processor && this.microphone) {
+        this.paused = true;
+      }
+
+      return this;
+    }
+  }, {
+    key: 'resume',
+
+
+    /**
+     * Resume microphone, processor
+     */
+    value: function resume() {
+      if (this.processor && this.microphone) {
+        this.paused = false;
+      }
+
+      return this;
+    }
+
+    /**
+     * Toggle paused microphone, processor
+     */
+
+  }, {
+    key: 'togglePaused',
+    value: function togglePaused() {
+      if (this.processor && this.microphone) {
+        this.paused = !this.paused;
+      }
+
+      return this;
+    }
 
     /**
      * Requests access to the microphone and start recording
      * @return Promise
      */
+
+  }, {
+    key: 'start',
     value: function start() {
       var _this2 = this;
 
@@ -15916,6 +15960,7 @@ var MicRecorder = function () {
       this.context = new AudioContext();
       this.config.sampleRate = this.context.sampleRate;
       this.lameEncoder = new Encoder(this.config);
+      this.paused = false;
 
       var audio = this.config.deviceId ? { deviceId: { exact: this.config.deviceId } } : true;
 
