@@ -20,6 +20,7 @@ class MicRecorder {
     this.microphone = null;
     this.processor = null;
     this.startTime = 0;
+    this.paused = false;
 
     Object.assign(this.config, config);
   }
@@ -44,7 +45,7 @@ class MicRecorder {
 
     // Add all buffers from LAME into an array.
     this.processor.onaudioprocess = (event) => {
-      if (this.timerToStart) {
+      if (this.timerToStart || this.paused) {
         return;
       }
 
@@ -73,6 +74,7 @@ class MicRecorder {
       }
 
       this.processor.onaudioprocess = null;
+      this.paused = false;
 
       // Stop all audio tracks. Also, removes recording icon from chrome tab
       this.activeStream.getAudioTracks().forEach(track => track.stop());
@@ -80,6 +82,39 @@ class MicRecorder {
 
     return this;
   };
+
+  /**
+   * Pause microphone, processor
+   */
+  pause() {
+    if (this.processor && this.microphone) {
+      this.paused = true;
+    }
+
+    return this;
+  };
+
+  /**
+   * Resume microphone, processor
+   */
+  resume() {
+    if (this.processor && this.microphone) {
+      this.paused = false;
+    }
+
+    return this;
+  }
+
+  /**
+   * Toggle paused microphone, processor
+   */
+  togglePaused() {
+    if (this.processor && this.microphone) {
+      this.paused = !this.paused;
+    }
+
+    return this;
+  }
 
   /**
    * Requests access to the microphone and start recording
@@ -90,6 +125,7 @@ class MicRecorder {
     this.context = new AudioContext();
     this.config.sampleRate = this.context.sampleRate;
     this.lameEncoder = new Encoder(this.config);
+    this.paused = false;
 
     const audio = this.config.deviceId ? { deviceId: { exact: this.config.deviceId } } : true;
 
